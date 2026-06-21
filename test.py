@@ -4,15 +4,14 @@ import random
 import time
 
 # ==========================================
-# 0. 전역 서버 데이터베이스 초기화 (가상 데이터 완전 삭제)
+# 0. 전역 서버 데이터베이스 초기화 (세션 스테이트 금고 개설)
 # ==========================================
-# 처음 실행 시에는 랭킹 리스트를 텅 빈 공란([])으로 시작합니다.
+# [1단계 적용] 앱이 실행되거나 새로고침 되어도 기존 랭킹과 피드백이 리셋되지 않도록 금고 보존
 if "leaderboard" not in st.session_state:
-    st.session_state.leaderboard = []
+    st.session_state["leaderboard"] = []
 
-# 피드백 수집함도 마찬가지로 빈 상태로 시작합니다.
 if "feedback_db" not in st.session_state:
-    st.session_state.feedback_db = []
+    st.session_state["feedback_db"] = []
 
 # ==========================================
 # 1. 웹페이지 기본 설정 및 테마
@@ -38,7 +37,7 @@ with col2:
 with col3:
     age = st.number_input("나이 입력", min_value=1, max_value=120, value=20, step=1)
 
-# 데이터베이스
+# 닮은꼴 데이터베이스
 male_db = {"10세 미만": {"얼굴형": "서우진", "눈": "정현준", "코": "문우진", "입": "박다온"}, "10대": {"얼굴형": "라이즈 원빈", "눈": "투어스 신유", "코": "보이넥스트도어 명재현", "입": "앤팀 하루아"}, "20대": {"얼굴형": "차은우", "눈": "서강준", "코": "박보검", "입": "진(BTS)"}, "30대": {"얼굴형": "송중기", "눈": "박서준", "코": "지창욱", "입": "이종석"}, "40대": {"얼굴형": "공유", "눈": "현빈", "코": "조인성", "입": "조정석"}, "50대 이상": {"얼굴형": "이병헌", "눈": "정우성", "코": "장동건", "입": "차승원"}}
 female_db = {"10세 미만": {"얼굴형": "오지율", "눈": "구사랑", "코": "박소이", "입": "안소명"}, "10대": {"얼굴형": "뉴진스 해린", "눈": "장원영", "코": "엔믹스 설윤", "입": "베이비몬스터 아현"}, "20대": {"얼굴형": "카리나", "눈": "에스파 윈터", "코": "수지", "입": "아이유"}, "30대": {"얼굴형": "태연", "눈": "한소희", "코": "신세경", "입": "임윤아"}, "40대": {"얼굴형": "송혜교", "눈": "김태희", "코": "한가인", "입": "전지현"}, "50대 이상": {"얼굴형": "김희애", "눈": "이영애", "코": "고소영", "입": "김성령"}}
 
@@ -56,6 +55,7 @@ if uploaded_file is not None:
         with st.spinner("슈퍼컴퓨터가 당신의 이목구비를 소수점 단위로 뜯어내고 있습니다..."):
             time.sleep(1.0)
         
+        # 나이대별 보정치
         if age < 10: age_group, age_comment, bonus = "10세 미만", "영유아기 특유의 젖살 볼륨감과", 3.5
         elif age < 20: age_group, age_comment, bonus = "10대", "생기 넘치는 피부 톤과 균형 잡힌", 2.0
         elif age < 30: age_group, age_comment, bonus = "20대", "골격 구조가 완성되어 가장 입체적인", 1.0
@@ -69,10 +69,14 @@ if uploaded_file is not None:
         final_score = round(base_score + bonus, 1)
         final_score = max(55.0, min(99.9, final_score))
         
+        # ----------------====================================
+        # 🔥 [2단계 적용] 현재 스캔 결과를 session_state 금고 랭킹판에 안전하게 누적
+        # ----------------------------------------------------
         new_record = {"name": user_name, "score": final_score, "gender": gender, "age": age}
-        st.session_state.leaderboard.append(new_record)
+        st.session_state["leaderboard"].append(new_record)
         
-        all_records = sorted(st.session_state.leaderboard, key=lambda x: x["score"], reverse=True)
+        # 금고에서 데이터를 다 끄집어내서 높은 점수 순으로 실시간 정렬
+        all_records = sorted(st.session_state["leaderboard"], key=lambda x: x["score"], reverse=True)
         my_rank = all_records.index(new_record) + 1
         total_players = len(all_records)
         top_percent = round((my_rank / total_players) * 100, 1)
@@ -80,7 +84,7 @@ if uploaded_file is not None:
 
         db = male_db if is_male else female_db
 
-        # 결과 출력
+        # 결과 출력 구역
         st.success(f"🎯 {user_name}님의 와꾸 스캔 완료!")
         col_res1, col_res2 = st.columns(2)
         with col_res1:
@@ -110,7 +114,7 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
             st.error("후기 내용을 입력해 주세요!")
         else:
             fb_record = {"name": user_name, "stars": accuracy_stars, "text": user_review}
-            st.session_state.feedback_db.append(fb_record)
+            st.session_state["feedback_db"].append(fb_record)
             st.success("🎉 설문조사가 성공적으로 제출되었습니다!")
 
 # ==========================================
@@ -119,23 +123,20 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
 st.markdown("---")
 col_bottom1, col_bottom2 = st.columns(2)
 
-# [왼쪽] 명예의 전당 (💥 공란 보정 로직 가동)
+# [왼쪽] 명예의 전당 (금고에서 안전하게 읽어옴)
 with col_bottom1:
     st.subheader("🏆 명예의 전당 (TOP 3)")
     
-    # 누적 기록을 정렬
-    top_records = sorted(st.session_state.leaderboard, key=lambda x: x["score"], reverse=True)
+    # 누적 기록을 실시간 정렬해서 랭킹 보드 구성
+    top_records = sorted(st.session_state["leaderboard"], key=lambda x: x["score"], reverse=True)
     
-    # 1, 2, 3위에 대해 순회하면서 데이터가 있으면 출력, 없으면 공란 표시
     for rank in range(1, 4):
         medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉"
         
         if len(top_records) >= rank:
-            # 실제 데이터가 존재하는 경우
             p = top_records[rank - 1]
             st.markdown(f"> **{medal} {rank}등: {p['name']}** ({p['score']}점)")
         else:
-            # 💥 데이터가 아직 채워지지 않은 공란인 경우
             st.markdown(f"> **{medal} {rank}등:** `아직 등록된 기록이 없습니다.`")
 
 # [오른쪽] 잠금형 비밀 피드백 보관함
@@ -144,11 +145,11 @@ with col_bottom2:
     admin_password = st.text_input("마스터 비밀번호를 입력하세요", type="password", placeholder="Password...")
     
     if admin_password == "shutainz1718":
-        if len(st.session_state.feedback_db) == 0:
+        if len(st.session_state["feedback_db"]) == 0:
             st.info("🔓 인증 성공! 아직 수집된 피드백 데이터가 없습니다.")
         else:
             st.success("🔓 인증 성공! 실시간 데이터 수집 현황을 오픈합니다.")
-            for fb in reversed(st.session_state.feedback_db):
+            for fb in reversed(st.session_state["feedback_db"]):
                 st.markdown(f"> **{fb['name']}** (평점: {'⭐' * fb['stars']})\n> *\"{fb['text']}\"*\n> ---")
     elif admin_password != "":
         st.error("❌ 비밀번호가 올바르지 않습니다. 접근 권한이 없습니다.")
