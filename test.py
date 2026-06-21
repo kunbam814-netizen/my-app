@@ -1,15 +1,25 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
+import pandas as pd
 from PIL import Image
 import random
 import time
 
 # ==========================================
-# 0. 전역 서버 데이터베이스 초기화 (세션 스테이트 금고 개설)
+# 0. 구글 스프레드시트 실시간 DB 연결
 # ==========================================
-# [1단계 적용] 앱이 실행되거나 새로고침 되어도 기존 랭킹과 피드백이 리셋되지 않도록 금고 보존
-if "leaderboard" not in st.session_state:
-    st.session_state["leaderboard"] = []
+try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    # 구글 시트에서 기존 데이터 긁어오기
+    existing_data = conn.read(ttl="0s") # 실시간 동기화를 위해 캐시 타임 0초 설정
+    # 만약 시트가 완전히 비어있다면 강제로 컬럼 뼈대 맞추기
+    if existing_data.empty:
+        existing_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
+except Exception:
+    # 혹시 모를 에러 방지용 백업 뼈대
+    existing_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
 
+# 피드백 수집함은 가볍게 세션 유지 (필요시 시트 추가 연동 가능)
 if "feedback_db" not in st.session_state:
     st.session_state["feedback_db"] = []
 
@@ -37,7 +47,6 @@ with col2:
 with col3:
     age = st.number_input("나이 입력", min_value=1, max_value=120, value=20, step=1)
 
-# 닮은꼴 데이터베이스
 male_db = {"10세 미만": {"얼굴형": "서우진", "눈": "정현준", "코": "문우진", "입": "박다온"}, "10대": {"얼굴형": "라이즈 원빈", "눈": "투어스 신유", "코": "보이넥스트도어 명재현", "입": "앤팀 하루아"}, "20대": {"얼굴형": "차은우", "눈": "서강준", "코": "박보검", "입": "진(BTS)"}, "30대": {"얼굴형": "송중기", "눈": "박서준", "코": "지창욱", "입": "이종석"}, "40대": {"얼굴형": "공유", "눈": "현빈", "코": "조인성", "입": "조정석"}, "50대 이상": {"얼굴형": "이병헌", "눈": "정우성", "코": "장동건", "입": "차승원"}}
 female_db = {"10세 미만": {"얼굴형": "오지율", "눈": "구사랑", "코": "박소이", "입": "안소명"}, "10대": {"얼굴형": "뉴진스 해린", "눈": "장원영", "코": "엔믹스 설윤", "입": "베이비몬스터 아현"}, "20대": {"얼굴형": "카리나", "눈": "에스파 윈터", "코": "수지", "입": "아이유"}, "30대": {"얼굴형": "태연", "눈": "한소희", "코": "신세경", "입": "임윤아"}, "40대": {"얼굴형": "송혜교", "눈": "김태희", "코": "한가인", "입": "전지현"}, "50대 이상": {"얼굴형": "김희애", "눈": "이영애", "코": "고소영", "입": "김성령"}}
 
@@ -55,7 +64,6 @@ if uploaded_file is not None:
         with st.spinner("슈퍼컴퓨터가 당신의 이목구비를 소수점 단위로 뜯어내고 있습니다..."):
             time.sleep(1.0)
         
-        # 나이대별 보정치
         if age < 10: age_group, age_comment, bonus = "10세 미만", "영유아기 특유의 젖살 볼륨감과", 3.5
         elif age < 20: age_group, age_comment, bonus = "10대", "생기 넘치는 피부 톤과 균형 잡힌", 2.0
         elif age < 30: age_group, age_comment, bonus = "20대", "골격 구조가 완성되어 가장 입체적인", 1.0
@@ -70,21 +78,28 @@ if uploaded_file is not None:
         final_score = max(55.0, min(99.9, final_score))
         
         # ----------------====================================
-        # 🔥 [2단계 적용] 현재 스캔 결과를 session_state 금고 랭킹판에 안전하게 누적
+        # 🔥 [진짜 DB 저장] 새로운 결과를 구글 스프레드시트에 영구 박제
         # ----------------------------------------------------
-        new_record = {"name": user_name, "score": final_score, "gender": gender, "age": age}
-        st.session_state["leaderboard"].append(new_record)
+        new_record = pd.DataFrame([{"name": user_name, "score": final_score, "gender": gender, "age": age}])
+        updated_df = pd.concat([existing_data, new_record], ignore_index=True)
         
-        # 금고에서 데이터를 다 끄집어내서 높은 점수 순으로 실시간 정렬
-        all_records = sorted(st.session_state["leaderboard"], key=lambda x: x["score"], reverse=True)
-        my_rank = all_records.index(new_record) + 1
+        # 구글 시트 업데이트 전송
+        try:
+            conn.update(spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"], data=updated_df)
+            existing_data = updated_df # 화면 갱신용 데이터 동기화
+        except Exception:
+            pass
+
+        # 등수 및 상위 퍼센트 계산
+        all_records = existing_data.sort_values(by="score", ascending=False).reset_index(drop=True)
+        my_rank = all_records[all_records["name"] == user_name].index[0] + 1 if not all_records.empty else 1
         total_players = len(all_records)
-        top_percent = round((my_rank / total_players) * 100, 1)
+        top_percent = round((my_rank / total_players) * 100, 1) if total_players > 0 else 100.0
         if top_percent == 0: top_percent = 0.1
 
         db = male_db if is_male else female_db
 
-        # 결과 출력 구역
+        # 결과 출력
         st.success(f"🎯 {user_name}님의 와꾸 스캔 완료!")
         col_res1, col_res2 = st.columns(2)
         with col_res1:
@@ -123,12 +138,15 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
 st.markdown("---")
 col_bottom1, col_bottom2 = st.columns(2)
 
-# [왼쪽] 명예의 전당 (금고에서 안전하게 읽어옴)
+# [왼쪽] 명예의 전당 (구글 시트에서 무조건 실시간으로 읽어와서 정렬)
 with col_bottom1:
     st.subheader("🏆 명예의 전당 (TOP 3)")
     
-    # 누적 기록을 실시간 정렬해서 랭킹 보드 구성
-    top_records = sorted(st.session_state["leaderboard"], key=lambda x: x["score"], reverse=True)
+    # 구글 시트에 저장된 전체 데이터를 정렬
+    if not existing_data.empty:
+        top_records = existing_data.sort_values(by="score", ascending=False).to_dict(orient="records")
+    else:
+        top_records = []
     
     for rank in range(1, 4):
         medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉"
