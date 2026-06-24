@@ -10,18 +10,21 @@ import time
 # ==========================================
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
-    # 구글 시트에서 기존 데이터 긁어오기
-    existing_data = conn.read(ttl="0s") # 실시간 동기화를 위해 캐시 타임 0초 설정
-    # 만약 시트가 완전히 비어있다면 강제로 컬럼 뼈대 맞추기
+    
+    # [랭킹 데이터] 'ranking' 탭에서 긁어오기
+    existing_data = conn.read(worksheet="ranking", ttl="0s")
     if existing_data.empty:
         existing_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
-except Exception:
-    # 혹시 모를 에러 방지용 백업 뼈대
+        
+    # [피드백 데이터] 'feedback' 탭에서 긁어오기
+    existing_feedback = conn.read(worksheet="feedback", ttl="0s")
+    if existing_feedback.empty:
+        existing_feedback = pd.DataFrame(columns=["name", "stars", "text"])
+        
+except Exception as e:
+    st.error(f"🚨 DB 초기 연결 실패! 탭 이름(ranking, feedback)이나 권한을 확인하세요. 에러내용: {e}")
     existing_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
-
-# 피드백 수집함은 가볍게 세션 유지 (필요시 시트 추가 연동 가능)
-if "feedback_db" not in st.session_state:
-    st.session_state["feedback_db"] = []
+    existing_feedback = pd.DataFrame(columns=["name", "stars", "text"])
 
 # ==========================================
 # 1. 웹페이지 기본 설정 및 테마
@@ -77,18 +80,15 @@ if uploaded_file is not None:
         final_score = round(base_score + bonus, 1)
         final_score = max(55.0, min(99.9, final_score))
         
-        # ----------------====================================
-        # 🔥 [진짜 DB 저장] 새로운 결과를 구글 스프레드시트에 영구 박제
-        # ----------------------------------------------------
+        # 🔥 [진짜 DB 저장] 새로운 결과를 구글 스프레드시트 'ranking' 탭에 박제
         new_record = pd.DataFrame([{"name": user_name, "score": final_score, "gender": gender, "age": age}])
         updated_df = pd.concat([existing_data, new_record], ignore_index=True)
         
-        # 구글 시트 업데이트 전송
         try:
-            conn.update(spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"], data=updated_df)
-            existing_data = updated_df # 화면 갱신용 데이터 동기화
-        except Exception:
-            pass
+            conn.update(worksheet="ranking", data=updated_df)
+            existing_data = updated_df # 화면 실시간 갱신
+        except Exception as e:
+            st.error(f"🚨 랭킹 저장 실패! 시트 접근 권한이나 탭 이름을 확인하세요: {e}")
 
         # 등수 및 상위 퍼센트 계산
         all_records = existing_data.sort_values(by="score", ascending=False).reset_index(drop=True)
@@ -128,9 +128,16 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
         if user_review.strip() == "":
             st.error("후기 내용을 입력해 주세요!")
         else:
-            fb_record = {"name": user_name, "stars": accuracy_stars, "text": user_review}
-            st.session_state["feedback_db"].append(fb_record)
-            st.success("🎉 설문조사가 성공적으로 제출되었습니다!")
+            # 🔥 [피드백 DB 저장] 구글 시트 'feedback' 탭으로 바로 전송
+            new_fb = pd.DataFrame([{"name": user_name, "stars": accuracy_stars, "text": user_review}])
+            updated_fb = pd.concat([existing_feedback, new_fb], ignore_index=True)
+            
+            try:
+                conn.update(worksheet="feedback", data=updated_fb)
+                existing_feedback = updated_fb # 화면 실시간 갱신
+                st.success("🎉 설문조사가 성공적으로 제출되었습니다! 이제 새로고침해도 구글 시트에 영구 박제됩니다.")
+            except Exception as e:
+                st.error(f"🚨 피드백 저장 실패! 시트 접근 권한이나 탭 이름을 확인하세요: {e}")
 
 # ==========================================
 # 5. 결과 페이지 최하단 2단 레이아웃
@@ -138,11 +145,10 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
 st.markdown("---")
 col_bottom1, col_bottom2 = st.columns(2)
 
-# [왼쪽] 명예의 전당 (구글 시트에서 무조건 실시간으로 읽어와서 정렬)
+# [왼쪽] 명예의 전당 (구글 시트 'ranking' 탭에서 실시간 정렬)
 with col_bottom1:
     st.subheader("🏆 명예의 전당 (TOP 3)")
     
-    # 구글 시트에 저장된 전체 데이터를 정렬
     if not existing_data.empty:
         top_records = existing_data.sort_values(by="score", ascending=False).to_dict(orient="records")
     else:
@@ -157,17 +163,19 @@ with col_bottom1:
         else:
             st.markdown(f"> **{medal} {rank}등:** `아직 등록된 기록이 없습니다.`")
 
-# [오른쪽] 잠금형 비밀 피드백 보관함
+# [오른쪽] 잠금형 비밀 피드백 보관함 (구글 시트 'feedback' 탭에서 실시간 긁어옴)
 with col_bottom2:
     st.subheader("🔒 개발자 전용 피드백 비밀기지")
     admin_password = st.text_input("마스터 비밀번호를 입력하세요", type="password", placeholder="Password...")
     
     if admin_password == "shutainz1718":
-        if len(st.session_state["feedback_db"]) == 0:
+        if existing_feedback.empty:
             st.info("🔓 인증 성공! 아직 수집된 피드백 데이터가 없습니다.")
         else:
             st.success("🔓 인증 성공! 실시간 데이터 수집 현황을 오픈합니다.")
-            for fb in reversed(st.session_state["feedback_db"]):
-                st.markdown(f"> **{fb['name']}** (평점: {'⭐' * fb['stars']})\n> *\"{fb['text']}\"*\n> ---")
+            # 구글 시트에 있는 데이터를 반복문으로 출력
+            fb_list = existing_feedback.to_dict(orient="records")
+            for fb in reversed(fb_list):
+                st.markdown(f"> **{fb['name']}** (평점: {'⭐' * int(fb['stars'])})\n> *\"{fb['text']}\"*\n> ---")
     elif admin_password != "":
         st.error("❌ 비밀번호가 올바르지 않습니다. 접근 권한이 없습니다.")
