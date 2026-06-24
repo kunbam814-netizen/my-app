@@ -1,4 +1,3 @@
-
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
@@ -113,4 +112,75 @@ if uploaded_file is not None:
 
         st.markdown("### 📊 부위별 정밀 분석 결과 및 닮은꼴")
         st.info(f"**👤 얼굴형:** `{db[age_group]['얼굴형']}`과 윤곽 흡사. 턱 보톡스 및 인모드 리프팅 추천.")
-        st.info(f"**👁️ 눈( 
+        st.info(f"**👁️ 눈(Eye):** `{db[age_group]['눈']}`과 눈매 흡사. 비절개 눈매 교정 고려.")
+        st.info(f"**👃 코(Nose):** `{db[age_group]['코']}`와 콧대 라인 일치. 하이코 필러 및 코끝 연골 묶기 시술 추천.")
+        st.info(f"**👄 입(Lip):** `{db[age_group]['입']}`과 입술 볼륨 유사. 입술 필러+입꼬리 보톡스 밸런스 추천.")
+
+# ==========================================
+# 5. 실시간 피드백 및 설문조사 작성란 (유저용)
+# ==========================================
+st.markdown("---")
+st.subheader("💬 프로그램 피드백 및 후기 남기기")
+
+with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작성란 열기"):
+    st.write(f"**{user_name}**님, AI의 팩폭 진단이 얼마나 정확했나요?")
+    accuracy_stars = st.slider("1) 진단의 정확성 평점 (5점 만점)", min_value=1, max_value=5, value=5, step=1)
+    user_review = st.text_area("2) 주관식 한줄평 및 개선점 피드백을 남겨주세요")
+    
+    if st.button("🚀 설문 데이터 최종 제출하기"):
+        if user_review.strip() == "":
+            st.error("후기 내용을 입력해 주세요!")
+        else:
+            try:
+                realtime_feedback = conn.read(worksheet="feedback", ttl="0s")
+            except Exception as e:
+                st.error("🚨 구글 서버 트래픽 초과로 피드백을 일시적으로 수집하지 못했습니다. 잠시 후 다시 시도해 주세요!")
+                st.stop()
+                
+            new_fb = pd.DataFrame([{"name": user_name, "stars": accuracy_stars, "text": user_review}])
+            updated_fb = pd.concat([realtime_feedback, new_fb], ignore_index=True)
+            
+            try:
+                conn.update(worksheet="feedback", data=updated_fb)
+                display_feedback = updated_fb  # 피드백 대시보드 실시간 갱신
+                st.success("🎉 설문조사가 성공적으로 제출되었습니다! 구글 시트에 안전하게 박제됩니다.")
+            except Exception as e:
+                st.error(f"🚨 피드백 저장 실패! 에러: {e}")
+
+# ==========================================
+# 6. 결과 페이지 최하단 2단 레이아웃 (명예의 전당 / 비밀기지)
+# ==========================================
+st.markdown("---")
+col_bottom1, col_bottom2 = st.columns(2)
+
+with col_bottom1:
+    st.subheader("🏆 명예의 전당 (TOP 3)")
+    if not display_data.empty:
+        top_records = display_data.sort_values(by="score", ascending=False).to_dict(orient="records")
+    else:
+        top_records = []
+    
+    for rank in range(1, 4):
+        medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉"
+        if len(top_records) >= rank:
+            p = top_records[rank - 1]
+            st.markdown(f"> **{medal} {rank}등: {p['name']}** ({p['score']}점)")
+        else:
+            st.markdown(f"> **{medal} {rank}등:** `아직 등록된 기록이 없습니다.`")
+
+with col_bottom2:
+    st.subheader("🔒 개발자 전용 피드백 비밀기지")
+    admin_password = st.text_input("마스터 비밀번호를 입력하세요", type="password", placeholder="Password...")
+    
+    if admin_password == "shutainz1718":
+        if display_feedback.empty:
+            st.info("🔓 인증 성공! 아직 수집된 피드백 데이터가 없습니다.")
+        else:
+            st.success("🔓 인증 성공! 구글 시트 실시간 피드백 현황판 오픈.")
+            fb_list = display_feedback.to_dict(orient="records")
+            for fb in reversed(fb_list):
+                st.markdown(f"> **{fb['name']}** (평점: {'⭐' * int(fb['stars'])})\n> *\"{fb['text']}\"*\n> ---")
+    elif admin_password != "":
+        st.error("❌ 비밀번호가 올바르지 않습니다. 접근 권한이 없습니다.")
+
+     
