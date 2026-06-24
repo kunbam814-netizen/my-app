@@ -3,24 +3,15 @@ import pandas as pd
 from PIL import Image
 import random
 import time
+import json
 import gspread
 from google.oauth2.service_account import Credentials
 
 # ==========================================
-# 1. 웹페이지 기본 설정
+# 1. 완벽한 원본 신분증 (오류 0% Raw String 기법 적용)
 # ==========================================
-st.set_page_config(page_title="초정밀 와꾸 스캐너", page_icon="🧬", layout="centered")
-st.title("🧬 [유전자 검사 대용] 내 얼굴 황금비율 & 와꾸 정밀 스캐너 🧬")
-st.caption("울산대 의예과 초정밀 알고리즘 탑재 | 관리자 보안 세션 적용")
-st.warning("⚠️ **[스캔 전 필독]** 정확한 팩트 폭격을 위해, 얼굴이 기울어지지 않고 **'정면'**에서 **'화면 중앙'**에 꽉 차게 나온 사진을 업로드해 주세요!")
-st.markdown("---")
-
-# ==========================================
-# 2. 구글 본사 직통 핫라인 연결 (에러 확률 0%)
-# ==========================================
-SHEET_ID = "1xcF9FJdZdCFvBArYcFa5vT-iD8Ev03HLfOpbx127UNk"
-
-SERVICE_ACCOUNT_DICT = {
+# 파이썬이 특수기호를 지멋대로 해석하지 못하도록 r""" """ 형태로 완벽하게 봉인했습니다.
+JSON_KEY = r"""{
   "type": "service_account",
   "project_id": "genial-current-500412-h0",
   "private_key_id": "e7e0b521621e3ec062abe8e3aa02241e1cfd8d5f",
@@ -32,18 +23,33 @@ SERVICE_ACCOUNT_DICT = {
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/bot-532%40genial-current-500412-h0.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
-}
+}"""
 
+# ==========================================
+# 2. 구글 본사 핫라인 다이렉트 연결 (캐싱으로 속도 극대화)
+# ==========================================
 @st.cache_resource
-def get_gspread_client():
+def get_gsheet_connection():
+    creds_dict = json.loads(JSON_KEY)
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(SERVICE_ACCOUNT_DICT, scopes=scopes)
-    return gspread.authorize(creds)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+    # 고유 코드 직통 연결
+    return client.open_by_key("1xcF9FJdZdCFvBArYcFa5vT-iD8Ev03HLfOpbx127UNk")
+
+# ==========================================
+# 3. 웹페이지 기본 설정 및 데이터 로드
+# ==========================================
+st.set_page_config(page_title="초정밀 와꾸 스캐너", page_icon="🧬", layout="centered")
+st.title("🧬 [유전자 검사 대용] 내 얼굴 황금비율 & 와꾸 정밀 스캐너 🧬")
+st.caption("울산대 의예과 초정밀 알고리즘 탑재 | 관리자 보안 세션 적용")
+st.warning("⚠️ **[스캔 전 필독]** 정확한 팩트 폭격을 위해, 얼굴이 기울어지지 않고 **'정면'**에서 **'화면 중앙'**에 꽉 차게 나온 사진을 업로드해 주세요!")
+st.markdown("---")
 
 try:
-    client = get_gspread_client()
-    sh = client.open_by_key(SHEET_ID)
+    sh = get_gsheet_connection()
     
+    # 랭킹 데이터 로드
     ws_ranking = sh.worksheet("ranking")
     try:
         ranking_records = ws_ranking.get_all_records()
@@ -51,7 +57,8 @@ try:
     except:
         ws_ranking.append_row(["name", "score", "gender", "age"])
         display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
-        
+
+    # 피드백 데이터 로드
     ws_feedback = sh.worksheet("feedback")
     try:
         feedback_records = ws_feedback.get_all_records()
@@ -61,14 +68,12 @@ try:
         display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
         
 except Exception as e:
-    st.error(f"🚨 DB 접속 실패! 관리자에게 문의하세요: {e}")
+    st.error(f"🚨 구글 다이렉트 연결 실패! 에러: {e}")
     display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
     display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
-    ws_ranking = None
-    ws_feedback = None
 
 # ==========================================
-# 3. 사용자 인적사항 입력 구역
+# 4. 사용자 인적사항 입력 구역
 # ==========================================
 st.subheader("📝 스캔 대상자 인적사항 (명예의 전당 등록용)")
 col1, col2, col3 = st.columns(3)
@@ -84,7 +89,7 @@ male_db = {"10세 미만": {"얼굴형": "서우진", "눈": "정현준", "코":
 female_db = {"10세 미만": {"얼굴형": "오지율", "눈": "구사랑", "코": "박소이", "입": "안소명"}, "10대": {"얼굴형": "뉴진스 해린", "눈": "장원영", "코": "엔믹스 설윤", "입": "베이비몬스터 아현"}, "20대": {"얼굴형": "카리나", "눈": "에스파 윈터", "코": "수지", "입": "아이유"}, "30대": {"얼굴형": "태연", "눈": "한소희", "코": "신세경", "입": "임윤아"}, "40대": {"얼굴형": "송혜교", "눈": "김태희", "코": "한가인", "입": "전지현"}, "50대 이상": {"얼굴형": "김희애", "눈": "이영애", "코": "고소영", "입": "김성령"}}
 
 # ==========================================
-# 4. 이미지 업로드 및 초정밀 얼평 알고리즘 가동
+# 5. 이미지 업로드 및 초정밀 얼평 가동
 # ==========================================
 st.subheader("📷 스캔용 낯짝 사진 투척")
 uploaded_file = st.file_uploader("얼굴 사진 파일 (PNG, JPG, JPEG)", type=["jpg", "jpeg", "png"])
@@ -94,10 +99,6 @@ if uploaded_file is not None:
     st.image(image, caption=f"스캔 대기 중인 {user_name}님의 안면 데이터", use_container_width=True)
     
     if st.button("🔥 와꾸 스캔 및 의학적 팩폭 솔루션 시작"):
-        if ws_ranking is None:
-            st.error("🚨 DB 연결에 실패하여 기록을 저장할 수 없습니다.")
-            st.stop()
-            
         with st.spinner("슈퍼컴퓨터가 당신의 이목구비를 소수점 단위로 뜯어내고 있습니다..."):
             time.sleep(1.2)
         
@@ -115,7 +116,7 @@ if uploaded_file is not None:
         final_score = round(base_score + bonus, 1)
         final_score = max(55.0, min(99.9, final_score))
         
-        # 💡 [핵심] 리셋 방지 덮어쓰기가 아닌, 맨 밑줄에 데이터 1줄 쏙 "추가" (절대 지워질 일 없음)
+        # 💡 [리셋 절대 방지] 전체 덮어쓰기가 아닌 맨 밑에 한 줄 '추가'만 합니다.
         try:
             ws_ranking.append_row([user_name, final_score, gender, age])
             new_row = pd.DataFrame([{"name": user_name, "score": final_score, "gender": gender, "age": age}])
@@ -145,7 +146,7 @@ if uploaded_file is not None:
         st.info(f"**👄 입(Lip):** `{db[age_group]['입']}`과 입술 볼륨 유사. 입술 필러+입꼬리 보톡스 밸런스 추천.")
 
 # ==========================================
-# 5. 실시간 피드백 및 설문조사 작성란
+# 6. 실시간 피드백 및 설문조사 작성란
 # ==========================================
 st.markdown("---")
 st.subheader("💬 프로그램 피드백 및 후기 남기기")
@@ -156,15 +157,10 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
     user_review = st.text_area("2) 주관식 한줄평 및 개선점 피드백을 남겨주세요")
     
     if st.button("🚀 설문 데이터 최종 제출하기"):
-        if ws_feedback is None:
-            st.error("🚨 DB 연결에 문제가 있어 피드백을 제출할 수 없습니다.")
-            st.stop()
-            
         if user_review.strip() == "":
             st.error("후기 내용을 입력해 주세요!")
         else:
             try:
-                # 피드백도 덮어쓰기 없이 맨 밑줄에 추가
                 ws_feedback.append_row([user_name, accuracy_stars, user_review])
                 new_fb = pd.DataFrame([{"name": user_name, "stars": accuracy_stars, "text": user_review}])
                 display_feedback = pd.concat([display_feedback, new_fb], ignore_index=True)
@@ -173,7 +169,7 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
                 st.error(f"🚨 피드백 저장 실패! 에러: {e}")
 
 # ==========================================
-# 6. 하단 레이아웃 (명예의 전당 / 비밀기지)
+# 7. 하단 레이아웃 (명예의 전당 / 비밀기지)
 # ==========================================
 st.markdown("---")
 col_bottom1, col_bottom2 = st.columns(2)
@@ -207,4 +203,3 @@ with col_bottom2:
                 st.markdown(f"> **{fb['name']}** (평점: {'⭐' * int(fb['stars'])})\n> *\"{fb['text']}\"*\n> ---")
     elif admin_password != "":
         st.error("❌ 비밀번호가 올바르지 않습니다. 접근 권한이 없습니다.")
- 
