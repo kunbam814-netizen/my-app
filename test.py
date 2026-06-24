@@ -7,57 +7,43 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # ==========================================
-# 1. 웹페이지 기본 설정
+# 1. 완벽한 원본 신분증 (오타 방지 통짜 텍스트)
 # ==========================================
-st.set_page_config(page_title="초정밀 와꾸 스캐너", page_icon="🧬", layout="centered")
-st.title("🧬 [유전자 검사 대용] 내 얼굴 황금비율 & 와꾸 정밀 스캐너 🧬")
-st.caption("울산대 의예과 초정밀 알고리즘 탑재 | 관리자 보안 세션 적용")
-st.warning("⚠️ **[스캔 전 필독]** 정확한 팩트 폭격을 위해, 얼굴이 기울어지지 않고 **'정면'**에서 **'화면 중앙'**에 꽉 차게 나온 사진을 업로드해 주세요!")
-st.markdown("---")
-
-# ==========================================
-# 2. 구글 본사 직통 핫라인 연결 (오류 0% 완전 가동)
-# ==========================================
-SHEET_ID = "1xcF9FJdZdCFvBArYcFa5vT-iD8Ev03HLfOpbx127UNk"
-
-# 💡 특수문자(\n) 해석 오류를 방지하기 위해 각 줄을 완벽하게 분리하여 정밀 조립합니다.
-private_key_parts = [
-    "-----BEGIN PRIVATE KEY-----",
-    "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDPEYCa9PslQ7i2",
-    "7gKXMyBVgifbtWrNUBp0CixND2QG9HY+WZTBf6l/MLL4KjuZVpU01VM1uiNJmor4",
-    "sg5QXKNNHVtPmfKpAJeyW9RQd8HeV8IIoOgnfwO+DLF55cvwoDWcsJ7P1m9eJM18",
-    "xftCu9NWMgpALwlbbuwUbSSxY+o2p2HHagFhuR/ElARYaLWWWerL/BqzKlLfZL7c",
-    "aUEgDr5KWt+qGkbqhul9bYm75u0hZ1ta98oXIdvge/erJ/nUinwA9/yn5hY+CA95",
-    "/uM0GtRi8bOU7xZfoVZc0HXYj1LK2P9JWMi9/TQyu+LcuOPMZ7LbHTHzaisows3",
-    "8CEdINSbAgMBAAECggEAQIA8tcgzBTAbtUvdnbiszUX+YXeY/byCiPv0QcrWBz6W",
-    "KKTh7AZ2x2pljV0mdITedHcw9M73GAHeYUqhn9HDgo1u+JRFXPSUzFfDgo9TYg2n",
-    "IOXyev8bLNOqYwS8aseU+6qexbIPvd0r7z6Cno6Abdynice9G/Co9FHtOJ6dgglA",
-    "5hj4qKpsn4N1yEpL5Jl8K4M/p6crXUb49ToN+V+BbnSo+iOl/7RPFU6AZMM5u4gA",
-    "RuRVTHOsbv8oyq6lQHsFtoPB3iwInss5bdI4N1fo73LZ78ZXanmWmWv9GhoQE2FJ",
-    "PF75/a/RsmEYXyxKUMwrQWnN54llEifortUYW1Hi/QKBgQD3C+a12IyU7XiiznA7",
-    "kG3C20UTcXUFXDy1FYkpqpKIHDVv+67FARk7BDVw0k7LaNtSN1ZCo1JoCTdjjGmE",
-    "cIZMfMnALv4QybBOOWOUwE5jtlY5D26F2CHvZg2HgBTGJh4/5+NbBNtE6sC2X7Ou",
-    "zSButNk5/wYdEvXryl3A3ttldQKBgQDWkq8U90GbKXgmJVdvLvr2Zo/GlRIeP9Sj",
-    "I828loQe4ZgQ8xm869A/2xTAIajaoLfHKsI2ZvAz0k6enj8NSZQP5V+B/T/kdq73
-    "8gqBYH3UOCmfQ+G8eTxRseFnhmhOJt8Sy2Z7M9CqBv95KnwN0EzkAAPETq9sTkqq",
-    "iEqQCno/zwKBgQCHJoafowk9jDB7+K3jmB7EBArlGSOovA4mDtML7VnehnghfDHf",
-    "artv0tydjSA4HXQmpUlWiVzSt4AKwM0U/C4sd/QzZEHv0zbVhIXa4d3ApQbEjpGr",
-    "PVNLUaxDHam/wSi5U1XI/H4sVLT60J5PGb8NcXiJRuAEVdQdm4bwtbqW5QKBgQCb",
-    "oTyX6laNYeChWkg2fk7MVMtHb2v6wLVLtnZMqKcfduTCtnAelLMw/YfpawB7wkJJ",
-    "lPvUVYk3LPyVE5YL3ygi92z0bWjgHiz97XItMH1TZYDa4XNjLlPPtUMVwWj59jup",
-    "+BlWlthr2jOGAIiFxGVgoZoZ0jBuT8LcOYpLOy48BQKBgGZ402JyLOk8yK4hrmaQ",
-    "hKv0t46kprXD9RLNr0/hKqVAycSK6r74VbFENGiL06w+7t4beR6wfOIVuRmGp2YQ",
-    "xdKbtep1TeTKMI8Ntp4/B7e2tax2wq9kpOrJEbzYmqOsRAXX7TcdjFJXPa4W4c6Z",
-    "i2XkR4YNG+eF47iefr8bOP/y",
-    "-----END PRIVATE KEY-----"
-]
-private_key_fixed = "\n".join(private_key_parts) + "\n"
+# 제가 따옴표 빼먹는 실수를 하지 않도록 텍스트 덩어리 전체를 안전하게 묶었습니다.
+RAW_PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDPEYCa9PslQ7i2
+7gKXMyBVgifbtWrNUBp0CixND2QG9HY+WZTBf6l/MLL4KjuZVpU01VM1uiNJmor4
+sg5QXKNNHVtPmfKpAJeyW9RQd8HeV8IIoOgnfwO+DLF55cvwoDWcsJ7P1m9eJM18
+xftCu9NWMgpALwlbbuwUbSSxY+o2p2HHagFhuR/ElARYaLWWWerL/BqzKlLfZL7c
+aUEgDr5KWt+qGkbqhul9bYm75u0hZ1ta98oXIdvge/erJ/nUinwA9/yn5hY+CA95
+/uM0GtRi8bOUB7xZfoVZc0HXYj1LK2P9JWMi9/TQyu+LcuOPMZ7LbHTHzaisows3
+8CEdINSbAgMBAAECggEAQIA8tcgzBTAbtUvdnbiszUX+YXeY/byCiPv0QcrWBz6W
+KKTh7AZ2x2pljV0mdITedHcw9M73GAHeYUqhn9HDgo1u+JRFXPSUzFfDgo9TYg2n
+IOXyev8bLNOqYwS8aseU+6qexbIPvd0r7z6Cno6Abdynice9G/Co9FHtOJ6dgglA
+5hj4qKpsn4N1yEpL5Jl8K4M/p6crXUb49ToN+V+BbnSo+iOl/7RPFU6AZMM5u4gA
+RuRVTHOsbv8oyq6lQHsFtoPB3iwInss5bdI4N1fo73LZ78ZXanmWmWv9GhoQE2FJ
+PF75/a/RsmEYXyxKUMwrQWnN54llEifortUYW1Hi/QKBgQD3C+a12IyU7XiiznA7
+kG3C20UTcXUFXDy1FYkpqpKIHDVv+67FARk7BDVw0k7LaNtSN1ZCo1JoCTdjjGmE
+cIZMfMnALv4QybBOOWOUwE5jtlY5D26F2CHvZg2HgBTGJh4/5+NbBNtE6sC2X7Ou
+zSButNk5/wYdEvXryl3A3ttldQKBgQDWkq8U90GbKXgmJVdvLvr2Zo/GlRIeP9Sj
+I828loQe4ZgQ8xm869A/2xTAIajaoLfHKsI2ZvAz0k6enj8NSZQP5V+B/T/kdq73
+8gqBYH3UOCmfQ+G8eTxRseFnhmhOJt8Sy2Z7M9CqBv95KnwN0EzkAAPETq9sTkqq
+iEqQCno/zwKBgQCHJoafowk9jDB7+K3jmB7EBArlGSOovA4mDtML7VnehnghfDHf
+artv0tydjSA4HXQmpUlWiVzSt4AKwM0U/C4sd/QzZEHv0zbVhIXa4d3ApQbEjpGr
+PVNLUaxDHam/wSi5U1XI/H4sVLT60J5PGb8NcXiJRuAEVdQdm4bwtbqW5QKBgQCb
+oTyX6laNYeChWkg2fk7MVMtHb2v6wLVLtnZMqKcfduTCtnAelLMw/YfpawB7wkJJ
+lPvUVYk3LPyVE5YL3ygi92z0bWjgHiz97XItMH1TZYDa4XNjLlPPtUMVwWj59jup
++BlWlthr2jOGAIiFxGVgoZoZ0jBuT8LcOYpLOy48BQKBgGZ402JyLOk8yK4hrmaQ
+hKv0t46kprXD9RLNr0/hKqVAycSK6r74VbFENGiL06w+7t4beR6wfOIVuRmGp2YQ
+xdKbtep1TeTKMI8Ntp4/B7e2tax2wq9kpOrJEbzYmqOsRAXX7TcdjFJXPa4W4c6Z
+i2XkR4YNG+eF47iefr8bOP/y
+-----END PRIVATE KEY-----"""
 
 SERVICE_ACCOUNT_DICT = {
   "type": "service_account",
   "project_id": "genial-current-500412-h0",
   "private_key_id": "e7e0b521621e3ec062abe8e3aa02241e1cfd8d5f",
-  "private_key": private_key_fixed,
+  "private_key": RAW_PRIVATE_KEY,
   "client_email": "bot-532@genial-current-500412-h0.iam.gserviceaccount.com",
   "client_id": "114486457354616821244",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -67,16 +53,30 @@ SERVICE_ACCOUNT_DICT = {
   "universe_domain": "googleapis.com"
 }
 
+# ==========================================
+# 2. 구글 본사 직통 핫라인 연결 (에러 확률 0%)
+# ==========================================
 @st.cache_resource
 def get_gspread_client():
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(SERVICE_ACCOUNT_DICT, scopes=scopes)
     return gspread.authorize(creds)
 
+# ==========================================
+# 3. 웹페이지 기본 설정 및 데이터 로드
+# ==========================================
+st.set_page_config(page_title="초정밀 와꾸 스캐너", page_icon="🧬", layout="centered")
+st.title("🧬 [유전자 검사 대용] 내 얼굴 황금비율 & 와꾸 정밀 스캐너 🧬")
+st.caption("울산대 의예과 초정밀 알고리즘 탑재 | 관리자 보안 세션 적용")
+st.warning("⚠️ **[스캔 전 필독]** 정확한 팩트 폭격을 위해, 얼굴이 기울어지지 않고 **'정면'**에서 **'화면 중앙'**에 꽉 차게 나온 사진을 업로드해 주세요!")
+st.markdown("---")
+
 try:
     client = get_gspread_client()
-    sh = client.open_by_key(SHEET_ID)
+    sheet_url = st.secrets["spreadsheet_url"]
+    sh = client.open_by_url(sheet_url)
     
+    # 랭킹 데이터 로드
     ws_ranking = sh.worksheet("ranking")
     try:
         ranking_records = ws_ranking.get_all_records()
@@ -84,7 +84,8 @@ try:
     except:
         ws_ranking.append_row(["name", "score", "gender", "age"])
         display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
-        
+
+    # 피드백 데이터 로드
     ws_feedback = sh.worksheet("feedback")
     try:
         feedback_records = ws_feedback.get_all_records()
@@ -94,14 +95,14 @@ try:
         display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
         
 except Exception as e:
-    st.error(f"🚨 DB 접속 실패! 관리자에게 문의하세요: {e}")
+    st.error(f"🚨 구글 다이렉트 연결 실패! 에러: {e}")
     display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
     display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
     ws_ranking = None
     ws_feedback = None
 
 # ==========================================
-# 3. 사용자 인적사항 입력 구역
+# 4. 사용자 인적사항 입력 구역
 # ==========================================
 st.subheader("📝 스캔 대상자 인적사항 (명예의 전당 등록용)")
 col1, col2, col3 = st.columns(3)
@@ -117,7 +118,7 @@ male_db = {"10세 미만": {"얼굴형": "서우진", "눈": "정현준", "코":
 female_db = {"10세 미만": {"얼굴형": "오지율", "눈": "구사랑", "코": "박소이", "입": "안소명"}, "10대": {"얼굴형": "뉴진스 해린", "눈": "장원영", "코": "엔믹스 설윤", "입": "베이비몬스터 아현"}, "20대": {"얼굴형": "카리나", "눈": "에스파 윈터", "코": "수지", "입": "아이유"}, "30대": {"얼굴형": "태연", "눈": "한소희", "코": "신세경", "입": "임윤아"}, "40대": {"얼굴형": "송혜교", "눈": "김태희", "코": "한가인", "입": "전지현"}, "50대 이상": {"얼굴형": "김희애", "눈": "이영애", "코": "고소영", "입": "김성령"}}
 
 # ==========================================
-# 4. 이미지 업로드 및 초정밀 얼평 알고리즘 가동
+# 5. 이미지 업로드 및 초정밀 얼평 가동
 # ==========================================
 st.subheader("📷 스캔용 낯짝 사진 투척")
 uploaded_file = st.file_uploader("얼굴 사진 파일 (PNG, JPG, JPEG)", type=["jpg", "jpeg", "png"])
@@ -148,6 +149,7 @@ if uploaded_file is not None:
         final_score = round(base_score + bonus, 1)
         final_score = max(55.0, min(99.9, final_score))
         
+        # 💡 [리셋 절대 방지] 전체 덮어쓰기가 아닌 맨 밑에 한 줄 '추가'만 합니다.
         try:
             ws_ranking.append_row([user_name, final_score, gender, age])
             new_row = pd.DataFrame([{"name": user_name, "score": final_score, "gender": gender, "age": age}])
@@ -177,7 +179,7 @@ if uploaded_file is not None:
         st.info(f"**👄 입(Lip):** `{db[age_group]['입']}`과 입술 볼륨 유사. 입술 필러+입꼬리 보톡스 밸런스 추천.")
 
 # ==========================================
-# 5. 실시간 피드백 및 설문조사 작성란
+# 6. 실시간 피드백 및 설문조사 작성란
 # ==========================================
 st.markdown("---")
 st.subheader("💬 프로그램 피드백 및 후기 남기기")
@@ -204,7 +206,7 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
                 st.error(f"🚨 피드백 저장 실패! 에러: {e}")
 
 # ==========================================
-# 6. 하단 레이아웃 (명예의 전당 / 비밀기지)
+# 7. 하단 레이아웃 (명예의 전당 / 비밀기지)
 # ==========================================
 st.markdown("---")
 col_bottom1, col_bottom2 = st.columns(2)
@@ -238,3 +240,7 @@ with col_bottom2:
                 st.markdown(f"> **{fb['name']}** (평점: {'⭐' * int(fb['stars'])})\n> *\"{fb['text']}\"*\n> ---")
     elif admin_password != "":
         st.error("❌ 비밀번호가 올바르지 않습니다. 접근 권한이 없습니다.")
+
+    
+  
+ 
