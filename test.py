@@ -24,7 +24,7 @@ SERVICE_ACCOUNT_DICT = {
   "universe_domain": "googleapis.com"
 }
 
-# 파이썬 내부에서 신분증 파일을 강제 생성하여 연결 (에러 확률 0%)
+# 파이썬 내부에서 신분증 파일을 강제 생성하여 연결
 with open("google_key.json", "w") as f:
     json.dump(SERVICE_ACCOUNT_DICT, f)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google_key.json"
@@ -42,7 +42,7 @@ try:
     sheet_url = st.secrets["spreadsheet_url"]
     conn = st.connection("gsheets", type=GSheetsConnection)
     
-    # 💡 [핵심 수정] spreadsheet=sheet_url 을 명시하여 400 에러를 원천 차단했습니다.
+    # 💡 [여기가 범인이었습니다!] 읽어올 때 주소(spreadsheet=sheet_url)를 확실하게 명시해 줍니다.
     display_data = conn.read(spreadsheet=sheet_url, worksheet="ranking", ttl="3s")
     if display_data.empty:
         display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
@@ -201,5 +201,4 @@ with col_bottom2:
                 st.markdown(f"> **{fb['name']}** (평점: {'⭐' * int(fb['stars'])})\n> *\"{fb['text']}\"*\n> ---")
     elif admin_password != "":
         st.error("❌ 비밀번호가 올바르지 않습니다. 접근 권한이 없습니다.")
-
-  
+   
