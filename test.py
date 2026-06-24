@@ -1,4 +1,4 @@
-import streamlit as st
+  import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from PIL import Image
@@ -16,13 +16,13 @@ st.warning("⚠️ **[스캔 전 필독]** 정확한 팩트 폭격을 위해, �
 st.markdown("---")
 
 # ==========================================
-# 2. 구글 스프레드시트 DB 연결 (Secrets 설정 자동 매핑)
+# 2. 구글 스프레드시트 DB 연결 (Secrets 자동 매핑 프로토콜)
 # ==========================================
 try:
-    # Secrets의 [connections.gsheets] 프로토콜 구조를 지 알아서 연동합니다.
+    # connections.gsheets 섹션에 정의된 멀티라인 크리덴셜을 안정적으로 로드합니다.
     conn = st.connection("gsheets", type=GSheetsConnection)
     
-    # 평소 화면 표시용 로딩 (3초 캐시를 주어 난타로 인한 구글 트래픽 마비 방지)
+    # 평소 화면 표시용 로딩 (3초 캐시를 주어 과도한 트래픽 제한 차단)
     display_data = conn.read(worksheet="ranking", ttl="3s")
     if display_data.empty:
         display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
@@ -182,5 +182,3 @@ with col_bottom2:
                 st.markdown(f"> **{fb['name']}** (평점: {'⭐' * int(fb['stars'])})\n> *\"{fb['text']}\"*\n> ---")
     elif admin_password != "":
         st.error("❌ 비밀번호가 올바르지 않습니다. 접근 권한이 없습니다.")
-
-     
