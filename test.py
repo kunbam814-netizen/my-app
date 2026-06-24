@@ -6,24 +6,7 @@ import random
 import time
 
 # ==========================================
-# 1. 구글 서비스 계정 (봇 신분증) 내부 박제
-# ==========================================
-SERVICE_ACCOUNT_DICT = {
-  "type": "service_account",
-  "project_id": "genial-current-500412-h0",
-  "private_key_id": "e7e0b521621e3ec062abe8e3aa02241e1cfd8d5f",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDPEYCa9PslQ7i2\n7gKXMyBVgifbtWrNUBp0CixND2QG9HY+WZTBf6l/MLL4KjuZVpU01VM1uiNJmor4\nsg5QXKNNHVtPmfKpAJeyW9RQd8HeV8IIoOgnfwO+DLF55cvwoDWcsJ7P1m9eJM18\nxftCu9NWMgpALwlbbuwUbSSxY+o2p2HHagFhuR/ElARYaLWWWerL/BqzKlLfZL7c\naUEgDr5KWt+qGkbqhul9bYm75u0hZ1ta98oXIdvge/erJ/nUinwA9/yn5hY+CA95\n/uM0GtRi8bOUB7xZfoVZc0HXYj1LK2P9JWMi9/TQyu+LcuOPMZ7LbHTHzaisows3\n8CEdINSbAgMBAAECggEAQIA8tcgzBTAbtUvdnbiszUX+YXeY/byCiPv0QcrWBz6W\nKKTh7AZ2x2pljV0mdITedHcw9M73GAHeYUqhn9HDgo1u+JRFXPSUzFfDgo9TYg2n\nIOXyev8bLNOqYwS8aseU+6qexbIPvd0r7z6Cno6Abdynice9G/Co9FHtOJ6dgglA\n5hj4qKpsn4N1yEpL5Jl8K4M/p6crXUb49ToN+V+BbnSo+iOl/7RPFU6AZMM5u4gA\nRuRVTHOsbv8oyq6lQHsFtoPB3iwInss5bdI4N1fo73LZ78ZXanmWmWv9GhoQE2FJ\nPF75/a/RsmEYXyxKUMwrQWnN54llEifortUYW1Hi/QKBgQD3C+a12IyU7XiiznA7\nkG3C20UTcXUFXDy1FYkpqpKIHDVv+67FARk7BDVw0k7LaNtSN1ZCo1JoCTdjjGmE\ncIZMfMnALv4QybBOOWOUwE5jtlY5D26F2CHvZg2HgBTGJh4/5+NbBNtE6sC2X7Ou\nzSButNk5/wYdEvXryl3A3ttldQKBgQDWkq8U90GbKXgmJVdvLvr2Zo/GlRIeP9Sj\nI828loQe4ZgQ8xm869A/2xTAIajaoLfHKsI2ZvAz0k6enj8NSZQP5V+B/T/kdq73\n8gqBYH3UOCmfQ+G8eTxRseFnhmhOJt8Sy2Z7M9CqBv95KnwN0EzkAAPETq9sTkqq\niEqQCno/zwKBgQCHJoafowk9jDB7+K3jmB7EBArlGSOovA4mDtML7VnehnghfDHf\nartv0tydjSA4HXQmpUlWiVzSt4AKwM0U/C4sd/QzZEHv0zbVhIXa4d3ApQbEjpGr\nPVNLUaxDHam/wSi5U1XI/H4sVLT60J5PGb8NcXiJRuAEVdQdm4bwtbqW5QKBgQCb\noTyX6laNYeChWkg2fk7MVMtHb2v6wLVLtnZMqKcfduTCtnAelLMw/YfpawB7wkJJ\nlPvUVYk3LPyVE5YL3ygi92z0bWjgHiz97XItMH1TZYDa4XNjLlPPtUMVwWj59jup\n+BlWlthr2jOGAIiFxGVgoZoZ0jBuT8LcOYpLOy48BQKBgGZ402JyLOk8yK4hrmaQ\nhKv0t46kprXD9RLNr0/hKqVAycSK6r74VbFENGiL06w+7t4beR6wfOIVuRmGp2YQ\nxdKbtep1TeTKMI8Ntp4/B7e2tax2wq9kpOrJEbzYmqOsRAXX7TcdjFJXPa4W4c6Z\ni2XkR4YNG+eF47iefr8bOP/y\n-----END PRIVATE KEY-----",
-  "client_email": "bot-532@genial-current-500412-h0.iam.gserviceaccount.com",
-  "client_id": "114486457354616821244",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/bot-532%40genial-current-500412-h0.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
-
-# ==========================================
-# 2. 웹페이지 기본 설정 및 기본 DB 연결
+# 1. 웹페이지 기본 설정 
 # ==========================================
 st.set_page_config(page_title="초정밀 와꾸 스캐너", page_icon="🧬", layout="centered")
 
@@ -32,19 +15,23 @@ st.caption("울산대 의예과 초정밀 알고리즘 탑재 | 관리자 보안
 st.warning("⚠️ **[스캔 전 필독]** 정확한 팩트 폭격을 위해, 얼굴이 기울어지지 않고 **'정면'**에서 **'화면 중앙'**에 꽉 차게 나온 사진을 업로드해 주세요!")
 st.markdown("---")
 
+# ==========================================
+# 2. 구글 스프레드시트 DB 연결 (자동 완벽 연동)
+# ==========================================
 try:
-    sheet_url = st.secrets["spreadsheet_url"]
-    conn = st.connection("gsheets", type=GSheetsConnection, gcp_service_account=SERVICE_ACCOUNT_DICT)
+    # Secrets의 [connections.gsheets] 설정을 자동으로 읽어와 완벽하게 연결됩니다.
+    conn = st.connection("gsheets", type=GSheetsConnection)
     
-    # 💡 [보호막 1] 평소 화면을 띄울 때는 3초 캐시를 주어 구글 서버 트래픽 마비를 방지합니다.
-    display_data = conn.read(spreadsheet=sheet_url, worksheet="ranking", ttl="3s")
+    # 평소 화면 표시용 (3초 캐시를 주어 무분별한 트래픽 유실 차단)
+    display_data = conn.read(worksheet="ranking", ttl="3s")
     if display_data.empty:
         display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
         
-    display_feedback = conn.read(spreadsheet=sheet_url, worksheet="feedback", ttl="3s")
+    display_feedback = conn.read(worksheet="feedback", ttl="3s")
     if display_feedback.empty:
         display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
 except Exception as e:
+    st.error(f"🚨 DB 연결 초기화 실패! 에러 내용: {e}")
     display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
     display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
 
@@ -92,12 +79,11 @@ if uploaded_file is not None:
         final_score = round(base_score + bonus, 1)
         final_score = max(55.0, min(99.9, final_score))
         
-        # 🚨 [보호막 2 - 강제 중단 트랩] 저장 직전에 무조건 실시간 생 데이터를 '강제'로 긁어옵니다.
+        # 🚨 [리셋 방지 트랩] 누르는 순간만큼은 캐시 없이 실시간 데이터를 강제 수집
         try:
-            realtime_data = conn.read(spreadsheet=sheet_url, worksheet="ranking", ttl="0s")
+            realtime_data = conn.read(worksheet="ranking", ttl="0s")
         except Exception as e:
-            # 순간적으로 구글 서버가 응답하지 않으면, 빈 상자에 덮어쓰지 않도록 실행을 즉시 파괴(중단)합니다!
-            st.error(f"🚨 구글 서버 트래픽 초과로 순간 연결이 유실되었습니다. 기존 랭킹판 보호를 위해 데이터 업로드를 차단했습니다. 1~2초 뒤 버튼을 다시 눌러주세요!")
+            st.error("🚨 구글 서버 트래픽 초과로 순간 연결이 유실되었습니다. 기존 랭킹판 보호를 위해 데이터 업로드를 안전하게 차단했으니 1~2초 뒤 버튼을 다시 눌러주세요!")
             st.stop()
             
         new_record = pd.DataFrame([{"name": user_name, "score": final_score, "gender": gender, "age": age}])
@@ -105,9 +91,9 @@ if uploaded_file is not None:
         
         try:
             conn.update(worksheet="ranking", data=updated_df)
-            display_data = updated_df  # 즉시 화면 동기화
+            display_data = updated_df  # 실시간 화면 동기화
         except Exception as e:
-            st.error(f"🚨 구글 시트 랭킹 저장 실패! 에러: {e}")
+            st.error(f"🚨 랭킹 저장 실패! 에러: {e}")
 
         all_records = display_data.sort_values(by="score", ascending=False).reset_index(drop=True)
         my_rank = all_records[all_records["name"] == user_name].index[0] + 1 if not all_records.empty else 1
@@ -145,11 +131,10 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
         if user_review.strip() == "":
             st.error("후기 내용을 입력해 주세요!")
         else:
-            # 🚨 피드백도 동일하게 저장 직전 강제 수집 및 덮어쓰기 방지 트랩 설치
             try:
-                realtime_feedback = conn.read(spreadsheet=sheet_url, worksheet="feedback", ttl="0s")
+                realtime_feedback = conn.read(worksheet="feedback", ttl="0s")
             except Exception as e:
-                st.error(f"🚨 구글 서버 트래픽 초과로 피드백을 일시적으로 저장하지 못했습니다. 잠시 후 다시 제출해 주세요!")
+                st.error("🚨 구글 서버 트래픽 초과로 후기를 일시적으로 저장하지 못했습니다. 1~2초 후 다시 시도해 주세요!")
                 st.stop()
                 
             new_fb = pd.DataFrame([{"name": user_name, "stars": accuracy_stars, "text": user_review}])
@@ -157,8 +142,8 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
             
             try:
                 conn.update(worksheet="feedback", data=updated_fb)
-                display_feedback = updated_fb
-                st.success("🎉 설문조사가 성공적으로 제출되었습니다! 이제 새로고침해도 구글 시트에 안전하게 박제됩니다.")
+                display_feedback = updated_fb  # 실시간 화면 동기화
+                st.success("🎉 설문조사가 성공적으로 제출되었습니다!")
             except Exception as e:
                 st.error(f"🚨 피드백 저장 실패! 에러: {e}")
 
