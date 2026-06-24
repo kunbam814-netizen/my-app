@@ -5,6 +5,26 @@ from PIL import Image
 import random
 import time
 
+# ==========================================
+# 1. 구글 서비스 계정 (봇 신분증) 내부 박제
+# ==========================================
+SERVICE_ACCOUNT_DICT = {
+  "type": "service_account",
+  "project_id": "genial-current-500412-h0",
+  "private_key_id": "e7e0b521621e3ec062abe8e3aa02241e1cfd8d5f",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDPEYCa9PslQ7i2\n7gKXMyBVgifbtWrNUBp0CixND2QG9HY+WZTBf6l/MLL4KjuZVpU01VM1uiNJmor4\nsg5QXKNNHVtPmfKpAJeyW9RQd8HeV8IIoOgnfwO+DLF55cvwoDWcsJ7P1m9eJM18\nxftCu9NWMgpALwlbbuwUbSSxY+o2p2HHagFhuR/ElARYaLWWWerL/BqzKlLfZL7c\naUEgDr5KWt+qGkbqhul9bYm75u0hZ1ta98oXIdvge/erJ/nUinwA9/yn5hY+CA95\n/uM0GtRi8bOUB7xZfoVZc0HXYj1LK2P9JWMi9/TQyu+LcuOPMZ7LbHTHzaisows3\n8CEdINSbAgMBAAECggEAQIA8tcgzBTAbtUvdnbiszUX+YXeY/byCiPv0QcrWBz6W\nKKTh7AZ2x2pljV0mdITedHcw9M73GAHeYUqhn9HDgo1u+JRFXPSUzFfDgo9TYg2n\nIOXyev8bLNOqYwS8aseU+6qexbIPvd0r7z6Cno6Abdynice9G/Co9FHtOJ6dgglA\n5hj4qKpsn4N1yEpL5Jl8K4M/p6crXUb49ToN+V+BbnSo+iOl/7RPFU6AZMM5u4gA\nRuRVTHOsbv8oyq6lQHsFtoPB3iwInss5bdI4N1fo73LZ78ZXanmWmWv9GhoQE2FJ\nPF75/a/RsmEYXyxKUMwrQWnN54llEifortUYW1Hi/QKBgQD3C+a12IyU7XiiznA7\nkG3C20UTcXUFXDy1FYkpqpKIHDVv+67FARk7BDVw0k7LaNtSN1ZCo1JoCTdjjGmE\ncIZMfMnALv4QybBOOWOUwE5jtlY5D26F2CHvZg2HgBTGJh4/5+NbBNtE6sC2X7Ou\nzSButNk5/wYdEvXryl3A3ttldQKBgQDWkq8U90GbKXgmJVdvLvr2Zo/GlRIeP9Sj\nI828loQe4ZgQ8xm869A/2xTAIajaoLfHKsI2ZvAz0k6enj8NSZQP5V+B/T/kdq73\n8gqBYH3UOCmfQ+G8eTxRseFnhmhOJt8Sy2Z7M9CqBv95KnwN0EzkAAPETq9sTkqq\niEqQCno/zwKBgQCHJoafowk9jDB7+K3jmB7EBArlGSOovA4mDtML7VnehnghfDHf\nartv0tydjSA4HXQmpUlWiVzSt4AKwM0U/C4sd/QzZEHv0zbVhIXa4d3ApQbEjpGr\nPVNLUaxDHam/wSi5U1XI/H4sVLT60J5PGb8NcXiJRuAEVdQdm4bwtbqW5QKBgQCb\noTyX6laNYeChWkg2fk7MVMtHb2v6wLVLtnZMqKcfduTCtnAelLMw/YfpawB7wkJJ\nlPvUVYk3LPyVE5YL3ygi92z0bWjgHiz97XItMH1TZYDa4XNjLlPPtUMVwWj59jup\n+BlWlthr2jOGAIiFxGVgoZoZ0jBuT8LcOYpLOy48BQKBgGZ402JyLOk8yK4hrmaQ\nhKv0t46kprXD9RLNr0/hKqVAycSK6r74VbFENGiL06w+7t4beR6wfOIVuRmGp2YQ\nxdKbtep1TeTKMI8Ntp4/B7e2tax2wq9kpOrJEbzYmqOsRAXX7TcdjFJXPa4W4c6Z\ni2XkR4YNG+eF47iefr8bOP/y\n-----END PRIVATE KEY-----",
+  "client_email": "bot-532@genial-current-500412-h0.iam.gserviceaccount.com",
+  "client_id": "114486457354616821244",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/bot-532%40genial-current-500412-h0.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
+
+# ==========================================
+# 2. 웹페이지 기본 설정 및 기본 DB 연결
+# ==========================================
 st.set_page_config(page_title="초정밀 와꾸 스캐너", page_icon="🧬", layout="centered")
 
 st.title("🧬 [유전자 검사 대용] 내 얼굴 황금비율 & 와꾸 정밀 스캐너 🧬")
@@ -12,25 +32,24 @@ st.caption("울산대 의예과 초정밀 알고리즘 탑재 | 관리자 보안
 st.warning("⚠️ **[스캔 전 필독]** 정확한 팩트 폭격을 위해, 얼굴이 기울어지지 않고 **'정면'**에서 **'화면 중앙'**에 꽉 차게 나온 사진을 업로드해 주세요!")
 st.markdown("---")
 
-# ==========================================
-# 1. DB 연결 (이제 Secrets에서 자동으로 100% 읽어옵니다)
-# ==========================================
 try:
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    existing_data = conn.read(worksheet="ranking", ttl="0s")
-    if existing_data.empty:
-        existing_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
+    sheet_url = st.secrets["spreadsheet_url"]
+    conn = st.connection("gsheets", type=GSheetsConnection, gcp_service_account=SERVICE_ACCOUNT_DICT)
+    
+    # 💡 [보호막 1] 평소 화면을 띄울 때는 3초 캐시를 주어 구글 서버 트래픽 마비를 방지합니다.
+    display_data = conn.read(spreadsheet=sheet_url, worksheet="ranking", ttl="3s")
+    if display_data.empty:
+        display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
         
-    existing_feedback = conn.read(worksheet="feedback", ttl="0s")
-    if existing_feedback.empty:
-        existing_feedback = pd.DataFrame(columns=["name", "stars", "text"])
+    display_feedback = conn.read(spreadsheet=sheet_url, worksheet="feedback", ttl="3s")
+    if display_feedback.empty:
+        display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
 except Exception as e:
-    st.error(f"🚨 DB 실시간 연결 실패! 에러 내용: {e}")
-    existing_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
-    existing_feedback = pd.DataFrame(columns=["name", "stars", "text"])
+    display_data = pd.DataFrame(columns=["name", "score", "gender", "age"])
+    display_feedback = pd.DataFrame(columns=["name", "stars", "text"])
 
 # ==========================================
-# 2. 사용자 입력 및 스캔 준비
+# 3. 사용자 인적사항 입력 구역
 # ==========================================
 st.subheader("📝 스캔 대상자 인적사항 (명예의 전당 등록용)")
 col1, col2, col3 = st.columns(3)
@@ -45,6 +64,9 @@ with col3:
 male_db = {"10세 미만": {"얼굴형": "서우진", "눈": "정현준", "코": "문우진", "입": "박다온"}, "10대": {"얼굴형": "라이즈 원빈", "눈": "투어스 신유", "코": "보이넥스트도어 명재현", "입": "앤팀 하루아"}, "20대": {"얼굴형": "차은우", "눈": "서강준", "코": "박보검", "입": "진(BTS)"}, "30대": {"얼굴형": "송중기", "눈": "박서준", "코": "지창욱", "입": "이종석"}, "40대": {"얼굴형": "공유", "눈": "현빈", "코": "조인성", "입": "조정석"}, "50대 이상": {"얼굴형": "이병헌", "눈": "정우성", "코": "장동건", "입": "차승원"}}
 female_db = {"10세 미만": {"얼굴형": "오지율", "눈": "구사랑", "코": "박소이", "입": "안소명"}, "10대": {"얼굴형": "뉴진스 해린", "눈": "장원영", "코": "엔믹스 설윤", "입": "베이비몬스터 아현"}, "20대": {"얼굴형": "카리나", "눈": "에스파 윈터", "코": "수지", "입": "아이유"}, "30대": {"얼굴형": "태연", "눈": "한소희", "코": "신세경", "입": "임윤아"}, "40대": {"얼굴형": "송혜교", "눈": "김태희", "코": "한가인", "입": "전지현"}, "50대 이상": {"얼굴형": "김희애", "눈": "이영애", "코": "고소영", "입": "김성령"}}
 
+# ==========================================
+# 4. 이미지 업로드 및 초정밀 얼평 알고리즘 가동
+# ==========================================
 st.subheader("📷 스캔용 낯짝 사진 투척")
 uploaded_file = st.file_uploader("얼굴 사진 파일 (PNG, JPG, JPEG)", type=["jpg", "jpeg", "png"])
 
@@ -70,17 +92,24 @@ if uploaded_file is not None:
         final_score = round(base_score + bonus, 1)
         final_score = max(55.0, min(99.9, final_score))
         
+        # 🚨 [보호막 2 - 강제 중단 트랩] 저장 직전에 무조건 실시간 생 데이터를 '강제'로 긁어옵니다.
+        try:
+            realtime_data = conn.read(spreadsheet=sheet_url, worksheet="ranking", ttl="0s")
+        except Exception as e:
+            # 순간적으로 구글 서버가 응답하지 않으면, 빈 상자에 덮어쓰지 않도록 실행을 즉시 파괴(중단)합니다!
+            st.error(f"🚨 구글 서버 트래픽 초과로 순간 연결이 유실되었습니다. 기존 랭킹판 보호를 위해 데이터 업로드를 차단했습니다. 1~2초 뒤 버튼을 다시 눌러주세요!")
+            st.stop()
+            
         new_record = pd.DataFrame([{"name": user_name, "score": final_score, "gender": gender, "age": age}])
-        updated_df = pd.concat([existing_data, new_record], ignore_index=True)
+        updated_df = pd.concat([realtime_data, new_record], ignore_index=True)
         
         try:
-            # 깔끔하게 업데이트 (더 이상 이상한 코드 안 씀)
             conn.update(worksheet="ranking", data=updated_df)
-            existing_data = updated_df
+            display_data = updated_df  # 즉시 화면 동기화
         except Exception as e:
             st.error(f"🚨 구글 시트 랭킹 저장 실패! 에러: {e}")
 
-        all_records = existing_data.sort_values(by="score", ascending=False).reset_index(drop=True)
+        all_records = display_data.sort_values(by="score", ascending=False).reset_index(drop=True)
         my_rank = all_records[all_records["name"] == user_name].index[0] + 1 if not all_records.empty else 1
         total_players = len(all_records)
         top_percent = round((my_rank / total_players) * 100, 1) if total_players > 0 else 100.0
@@ -102,7 +131,7 @@ if uploaded_file is not None:
         st.info(f"**👄 입(Lip):** `{db[age_group]['입']}`과 입술 볼륨 유사. 입술 필러+입꼬리 보톡스 밸런스 추천.")
 
 # ==========================================
-# 3. 피드백 구역
+# 5. 실시간 피드백 및 설문조사 작성란 (유저용)
 # ==========================================
 st.markdown("---")
 st.subheader("💬 프로그램 피드백 및 후기 남기기")
@@ -116,33 +145,38 @@ with st.expander("💌 분석 결과에 대한 정확성 평가 및 후기 작�
         if user_review.strip() == "":
             st.error("후기 내용을 입력해 주세요!")
         else:
+            # 🚨 피드백도 동일하게 저장 직전 강제 수집 및 덮어쓰기 방지 트랩 설치
+            try:
+                realtime_feedback = conn.read(spreadsheet=sheet_url, worksheet="feedback", ttl="0s")
+            except Exception as e:
+                st.error(f"🚨 구글 서버 트래픽 초과로 피드백을 일시적으로 저장하지 못했습니다. 잠시 후 다시 제출해 주세요!")
+                st.stop()
+                
             new_fb = pd.DataFrame([{"name": user_name, "stars": accuracy_stars, "text": user_review}])
-            updated_fb = pd.concat([existing_feedback, new_fb], ignore_index=True)
+            updated_fb = pd.concat([realtime_feedback, new_fb], ignore_index=True)
             
             try:
                 conn.update(worksheet="feedback", data=updated_fb)
-                existing_feedback = updated_fb
-                st.success("🎉 설문조사가 성공적으로 제출되었습니다! 구글 시트에 안전하게 박제됩니다.")
+                display_feedback = updated_fb
+                st.success("🎉 설문조사가 성공적으로 제출되었습니다! 이제 새로고침해도 구글 시트에 안전하게 박제됩니다.")
             except Exception as e:
                 st.error(f"🚨 피드백 저장 실패! 에러: {e}")
 
 # ==========================================
-# 4. 하단 레이아웃 (명예의 전당 / 비밀기지)
+# 6. 결과 페이지 최하단 2단 레이아웃 (명예의 전당 / 비밀기지)
 # ==========================================
 st.markdown("---")
 col_bottom1, col_bottom2 = st.columns(2)
 
 with col_bottom1:
     st.subheader("🏆 명예의 전당 (TOP 3)")
-    
-    if not existing_data.empty:
-        top_records = existing_data.sort_values(by="score", ascending=False).to_dict(orient="records")
+    if not display_data.empty:
+        top_records = display_data.sort_values(by="score", ascending=False).to_dict(orient="records")
     else:
         top_records = []
     
     for rank in range(1, 4):
         medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉"
-        
         if len(top_records) >= rank:
             p = top_records[rank - 1]
             st.markdown(f"> **{medal} {rank}등: {p['name']}** ({p['score']}점)")
@@ -154,11 +188,11 @@ with col_bottom2:
     admin_password = st.text_input("마스터 비밀번호를 입력하세요", type="password", placeholder="Password...")
     
     if admin_password == "shutainz1718":
-        if existing_feedback.empty:
+        if display_feedback.empty:
             st.info("🔓 인증 성공! 아직 수집된 피드백 데이터가 없습니다.")
         else:
             st.success("🔓 인증 성공! 구글 시트 실시간 피드백 현황판 오픈.")
-            fb_list = existing_feedback.to_dict(orient="records")
+            fb_list = display_feedback.to_dict(orient="records")
             for fb in reversed(fb_list):
                 st.markdown(f"> **{fb['name']}** (평점: {'⭐' * int(fb['stars'])})\n> *\"{fb['text']}\"*\n> ---")
     elif admin_password != "":
